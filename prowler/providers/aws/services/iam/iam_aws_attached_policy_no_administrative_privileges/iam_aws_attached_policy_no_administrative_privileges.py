@@ -12,10 +12,11 @@ class iam_aws_attached_policy_no_administrative_privileges(Check):
                 report = Check_Report_AWS(metadata=self.metadata(), resource=policy)
                 report.region = iam_client.region
                 report.status = "PASS"
-                report.status_extended = f"{policy.type} policy {policy.name} is attached but does not allow '*:*' administrative privileges."
+                attached_to = ", ".join(policy.attached_to) if policy.attached_to else "unknown"
+                report.status_extended = f"{policy.type} policy {policy.name} is attached but does not allow '*:*' administrative privileges. Attached to: {attached_to}."
                 if policy.document:
                     if check_admin_access(policy.document):
                         report.status = "FAIL"
-                        report.status_extended = f"{policy.type} policy {policy.name} is attached and allows '*:*' administrative privileges."
+                        report.status_extended = f"{policy.type} policy {policy.name} is attached and allows '*:*' administrative privileges. Attached to: {attached_to}."
                 findings.append(report)
         return findings

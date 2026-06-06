@@ -5,7 +5,11 @@ from unittest import mock
 from boto3 import client
 from moto import mock_aws
 
-from tests.providers.aws.utils import AWS_REGION_US_EAST_1, set_mocked_aws_provider
+from tests.providers.aws.utils import (
+    AWS_ACCOUNT_NUMBER,
+    AWS_REGION_US_EAST_1,
+    set_mocked_aws_provider,
+)
 
 
 class Test_iam_customer_attached_policy_no_administrative_privileges_test:
@@ -54,6 +58,7 @@ class Test_iam_customer_attached_policy_no_administrative_privileges_test:
                         f"Custom policy {policy_name} is attached and allows ",
                         result.status_extended,
                     )
+                    assert f"arn:aws:iam::{AWS_ACCOUNT_NUMBER}:role/my-path/my-role" in result.status_extended
 
     @mock_aws
     def test_policy_non_administrative(self):
@@ -100,6 +105,7 @@ class Test_iam_customer_attached_policy_no_administrative_privileges_test:
                         f"Custom policy {policy_name} is attached but does not allow",
                         result.status_extended,
                     )
+                    assert f"arn:aws:iam::{AWS_ACCOUNT_NUMBER}:role/my-path/my-role" in result.status_extended
 
     @mock_aws
     def test_policy_administrative_and_non_administrative(self):
@@ -162,6 +168,7 @@ class Test_iam_customer_attached_policy_no_administrative_privileges_test:
                         result.status_extended,
                     )
                     assert result.resource_id == policy_name_non_administrative
+                    assert f"arn:aws:iam::{AWS_ACCOUNT_NUMBER}:role/my-path/my-role" in result.status_extended
                 if result.resource_id == "policy2":
                     assert result.status == "FAIL"
                     assert result.resource_arn == arn_administrative
@@ -170,3 +177,4 @@ class Test_iam_customer_attached_policy_no_administrative_privileges_test:
                         result.status_extended,
                     )
                     assert result.resource_id == policy_name_administrative
+                    assert f"arn:aws:iam::{AWS_ACCOUNT_NUMBER}:role/my-path/my-role" in result.status_extended

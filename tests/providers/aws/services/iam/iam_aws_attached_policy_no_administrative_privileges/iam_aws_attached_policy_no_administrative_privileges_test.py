@@ -4,7 +4,11 @@ from unittest import mock
 from boto3 import client
 from moto import mock_aws
 
-from tests.providers.aws.utils import AWS_REGION_US_EAST_1, set_mocked_aws_provider
+from tests.providers.aws.utils import (
+    AWS_ACCOUNT_NUMBER,
+    AWS_REGION_US_EAST_1,
+    set_mocked_aws_provider,
+)
 
 
 class Test_iam_aws_attached_policy_no_administrative_privileges_test:
@@ -49,6 +53,7 @@ class Test_iam_aws_attached_policy_no_administrative_privileges_test:
                         "AWS policy AdministratorAccess is attached and allows ",
                         result.status_extended,
                     )
+                    assert f"arn:aws:iam::{AWS_ACCOUNT_NUMBER}:role/my-path/my-role" in result.status_extended
 
     @mock_aws(config={"iam": {"load_aws_managed_policies": True}})
     def test_policy_non_administrative(self):
@@ -92,6 +97,7 @@ class Test_iam_aws_attached_policy_no_administrative_privileges_test:
                         "AWS policy IAMUserChangePassword is attached but does not allow",
                         result.status_extended,
                     )
+                    assert f"arn:aws:iam::{AWS_ACCOUNT_NUMBER}:role/my-path/my-role" in result.status_extended
 
     @mock_aws(config={"iam": {"load_aws_managed_policies": True}})
     def test_policy_administrative_and_non_administrative(self):
@@ -139,6 +145,7 @@ class Test_iam_aws_attached_policy_no_administrative_privileges_test:
                         result.status_extended,
                     )
                     assert result.resource_id == "IAMUserChangePassword"
+                    assert f"arn:aws:iam::{AWS_ACCOUNT_NUMBER}:role/my-path/my-role" in result.status_extended
                 if result.resource_id == "AdministratorAccess":
                     assert result.status == "FAIL"
                     assert (
@@ -150,3 +157,4 @@ class Test_iam_aws_attached_policy_no_administrative_privileges_test:
                         result.status_extended,
                     )
                     assert result.resource_id == "AdministratorAccess"
+                    assert f"arn:aws:iam::{AWS_ACCOUNT_NUMBER}:role/my-path/my-role" in result.status_extended

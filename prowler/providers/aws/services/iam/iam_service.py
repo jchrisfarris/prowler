@@ -82,6 +82,7 @@ class IAM(AWSService):
         self.policies.update(self._list_policies("AWS"))
         self.policies.update(self._list_policies("Local"))
         self._list_policies_version(self.policies)
+        self._list_entities_for_aws_policies()
         self._list_inline_user_policies()
         self._list_inline_group_policies()
         self._list_inline_role_policies()
@@ -733,6 +734,37 @@ class IAM(AWSService):
             )
         return entities
 
+    def _list_entities_for_aws_policies(self):
+        logger.info("IAM - List Entities For AWS Managed Policies...")
+        user_arn_by_name = {user.name: user.arn for user in self.users} if self.users else {}
+        group_arn_by_name = {group.name: group.arn for group in self.groups} if self.groups else {}
+        role_arn_by_name = {role.name: role.arn for role in self.roles} if self.roles else {}
+        for policy in self.policies.values():
+            if policy.type in ("AWS", "Custom") and policy.attached:
+                try:
+                    paginator = self.client.get_paginator("list_entities_for_policy")
+                    for response in paginator.paginate(PolicyArn=policy.arn):
+                        for user in response.get("PolicyUsers", []):
+                            arn = user_arn_by_name.get(user["UserName"])
+                            if arn:
+                                policy.attached_to.append(arn)
+                        for group in response.get("PolicyGroups", []):
+                            arn = group_arn_by_name.get(group["GroupName"])
+                            if arn:
+                                policy.attached_to.append(arn)
+                        for role in response.get("PolicyRoles", []):
+                            arn = role_arn_by_name.get(role["RoleName"])
+                            if arn:
+                                policy.attached_to.append(arn)
+                except ClientError as error:
+                    logger.error(
+                        f"{self.region} -- {error.__class__.__name__}[{error.__traceback__.tb_lineno}]: {error}"
+                    )
+                except Exception as error:
+                    logger.error(
+                        f"{self.region} -- {error.__class__.__name__}[{error.__traceback__.tb_lineno}]: {error}"
+                    )
+
     def _list_policies(self, scope):
         logger.info("IAM - List Policies...")
         policies = {}
@@ -1193,6 +1225,7 @@ class Policy(BaseModel):
     attached: bool
     document: Optional[dict]
     tags: Optional[list] = []
+    attached_to: list[str] = []
 
 
 class SAMLProvider(BaseModel):
